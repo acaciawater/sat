@@ -4,12 +4,10 @@ Created on Jan 6, 2016
 @author: theo
 '''
 import gdal, osr, ogr
-import os,re,datetime,calendar
+import os,datetime,calendar
 import numpy as np
 from ftplib import FTP
 
-SUFFIXES = ['min', 'max', 'mean', 'std', 'var']
-        
 class Base:
 
     def __init__(self, filename=None):
@@ -298,13 +296,19 @@ class Base:
         except:
             std = np.zeros(len(var))
         #variation = np.divide(std, mean)
-
         self.create_tif(dest+'.min.tif',extent,mn,template,gdal.GDT_Float32)
         self.create_tif(dest+'.max.tif',extent,mx,template,gdal.GDT_Float32)
         self.create_tif(dest+'.mean.tif',extent,mean,template,gdal.GDT_Float32)
         self.create_tif(dest+'.std.tif',extent,std,template,gdal.GDT_Float32)
         self.create_tif(dest+'.var.tif',extent,var,template,gdal.GDT_Float32)
-            
+
+        try:
+            # not tested!
+            md = np.median(data)
+            self.create_tif(dest+'.med.tif',extent,md,template,gdal.GDT_Float32)
+        except:
+            pass
+        
     def get_stat(self, dataset, folder, dest, tile, extent=None, start=None, stop=None, grouper=None):
         tiles = []
         template = None
