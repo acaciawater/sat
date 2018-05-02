@@ -16,13 +16,18 @@ class GPM(Base):
         # 3B-DAY-L.MS.MRG.3IMERG.20161218-S000000-E235959.V03.nc4
         pat = r'3B\-DAY\-L\.MS\.MRG\.3IMERG\.(?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2})\-S000000\-E235959\.V03\.hdf$'
         m = re.search(pat, name)
+        if m is None:
+            # try version 5B, monthly
+            # 3B-MO.MS.MRG.3IMERG.20171201-S000000-E235959.12.V05B.HDF5
+            pat = r'3B\-MO\.MS\.MRG\.3IMERG\.(?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2})\-S000000\-E235959\.(?P<month2>\d{2})\.V05B\.HDF5$'
+            m = re.search(pat, name)
         if m is not None:
             year = int(m.group('year'))
             month = int(m.group('month'))
             day = int(m.group('day'))
             return datetime.date(year,month,day)
         return None
-    
+        
     def get_dataset(self, name):
         ds = Base.get_dataset(self, name)
         if ds:
