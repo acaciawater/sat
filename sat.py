@@ -190,7 +190,22 @@ class Base:
                     band = ds.GetRasterBand(1)
                     data = band.ReadAsArray(int(x),int(y),1,1)
                     dest.write('%s,%g\n' % (date or fil, data[0][0]))
-                        
+    
+    def get_geotransform(self, dataset, extent=None):
+        ''' get the geotransform of a dataset for a given extent '''
+        trans = list(dataset.GetGeoTransform())
+        if extent is not None:
+            box = self.transbox(dataset, extent, topix=False, clip=True)
+            trans[0] = box[0]
+            trans[3] = box[3]
+        return trans
+    
+    def copy_projection(self, source, dest, extent=None):
+        ''' copy projection and geotransform for given extent from source to dest dataset '''
+        dest.SetProjection(source.GetProjection())
+        trans = self.get_geotransform(source, extent)
+        dest.SetGeoTransform(trans)
+
     def get_tiff(self, dataset, folder, extent, agg='mean', eType=gdal.GDT_Int16):
         ''' cut extent out of a dataset and aggregate values '''
         count = 0
@@ -209,13 +224,7 @@ class Base:
                 if tif is None:
                     ysize,xsize = tile.shape
                     tif = gdal.GetDriverByName('GTiff').Create(os.path.join(folder, dataset+'.tif'), xsize, ysize, eType=eType)
-                    tif.SetProjection(ds.GetProjection())
-                    trans = list(ds.GetGeoTransform())
-                    if extent is not None:
-                        box = self.transbox(ds, extent, topix=False, clip=True)
-                        trans[0] = box[0]
-                        trans[3] = box[3]
-                    tif.SetGeoTransform(trans)
+                    self.copy_projection(ds,tif,extent)
                 data.append(tile)
         if tif is not None:
             band = tif.GetRasterBand(1)
@@ -243,14 +252,7 @@ class Base:
                     tile = self.get_data(ds, extent) # 2-dimensional np.ndarray
                     ysize,xsize = tile.shape
                     tif = gdal.GetDriverByName('GTiff').Create(dest, xsize, ysize, eType=eType)
-                    tif.SetProjection(ds.GetProjection())
-                    trans = list(ds.GetGeoTransform())
-                    #trans = [0.0500000000, 0.0000000000, 0.0000000000, -0.0500000000, -179.9750000000, 89.9750000000]
-                    if extent is not None:
-                        box = self.transbox(ds, extent, topix=False, clip=True)
-                        trans[0] = box[0]
-                        trans[3] = box[3]
-                    tif.SetGeoTransform(trans)
+                    self.copy_projection(ds, tif, extent)
                     band = tif.GetRasterBand(1)
                     band.WriteArray(np.array(tile))
                 except Exception as e:
@@ -267,13 +269,7 @@ class Base:
         print filename
         ysize,xsize = data.shape
         tif = gdal.GetDriverByName('GTiff').Create(filename, xsize, ysize, eType=etype)
-        tif.SetProjection(template.GetProjection())
-        trans = list(template.GetGeoTransform())
-        if extent is not None:
-            box = self.transbox(template, extent, topix=False, clip=True)
-            trans[0] = box[0]
-            trans[3] = box[3]
-        tif.SetGeoTransform(trans)
+        self.copy_projection(template, tif, extent)
         band = tif.GetRasterBand(1)
         band.WriteArray(data)
              

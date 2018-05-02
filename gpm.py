@@ -1,9 +1,5 @@
-'''
-Created on Jan 6, 2016
-
-@author: theo
-'''
 import os, re, datetime, osr, gdal
+import numpy as np
 from sat import Base
 
 class GPM(Base):
@@ -32,11 +28,7 @@ class GPM(Base):
         if ds:
             if not ds.GetProjection():
                 ds.SetProjection(self.wgs84)
-            ds.SetGeoTransform([-180,0.1,0,-60,0,0.1])
-            # transpose dimensions
-            t = ds.RasterXSize
-            ds.RasterXSize = ds.RasterYSize
-            ds.RasterYSize = t
+            ds.SetGeoTransform([-180,0.1,0,-90,0,0.1])
 
         return ds
 
@@ -46,6 +38,7 @@ class GPM(Base):
             ds = self.get_dataset(ds)
 
         band = ds.GetRasterBand(1)
+        
         # transpose data
         data = band.ReadAsArray().T
         if bbox is None:
@@ -57,27 +50,21 @@ class GPM(Base):
         xsize = int(x2-x1)+1
         yoff = int(y1)
         ysize = int(y2-y1)+1
-        return data[yoff:yoff+ysize, xoff:xoff+xsize]
-
-    def create_tif(self, filename, extent, data, template, etype):
-        if os.path.exists(filename):
-            os.remove(filename)
+        data = data[yoff:yoff+ysize, xoff:xoff+xsize]
+        data[data<-9998] = np.NaN
+        return data
+    
+    def get_geotransform(self, dataset, extent=None):
+        ''' get the geotransform of a dataset for a given extent '''
+        trans = list(dataset.GetGeoTransform())
+        if extent is None:
+            trans[0] = -180.0
+            trans[3] = -90.0
         else:
-            dirname = os.path.dirname(filename)
-            if not os.path.exists(dirname):
-                os.makedirs(dirname)
-        print filename
-        ysize,xsize = data.shape
-        tif = gdal.GetDriverByName('GTiff').Create(filename, xsize, ysize, eType=etype)
-        tif.SetProjection(template.GetProjection())
-        trans = list(template.GetGeoTransform())
-        if extent is not None:
             trans[0] = extent[0]
             trans[3] = extent[1]
-        tif.SetGeoTransform(trans)
-        band = tif.GetRasterBand(1)
-        band.WriteArray(data)
-    
+        return trans
+
     def convert_tif(self, dataset, folder, extent):
         for path, dirs, files in os.walk(folder):
             files.sort()
@@ -95,18 +82,24 @@ class GPM(Base):
 #FOLDER=r'/media/sf_C_DRIVE/Users/theo/Documents/projdirs/hdf'
 TESTFILE=r'/home/theo/src/sat/hdf/3B-DAY-L.MS.MRG.3IMERG.20150314-S000000-E235959.V03.hdf'
 FOLDER=r'/home/theo/src/sat/hdf'
-EXTENT=(10,10,50,50)
+EXTENT=(-180,-90,180,90)
 DATASET=r'HQprecipitation'
 if __name__ == '__main__':
     
     gpm = GPM()
-#     if not gpm.open(TESTFILE):
-#         print 'ERROR: cant open file', TESTFILE
-#     else:
-#         ds = gpm.get_dataset(DATASET)
-#         if ds is None:
-#             print 'ERROR: cant open dataset', DATASET
-#         else:
-#             data = gpm.get_data(DATASET,EXTENT)
-#             gpm.create_tif(r'/media/sf_C_DRIVE/Users/theo/Documents/projdirs/hdf/out7.tif', EXTENT, data, ds, etype=gdal.GDT_Float32)
-    gpm.convert_tif(DATASET, FOLDER, EXTENT)
+    if not gpm.open(TESTFILE):
+        print 'ERROR: cant open file', TESTFILE
+    else:
+        ds = gpm.get_dataset(DATASET)
+        if ds is None:
+            print 'ERROR: cant open dataset', DATASET
+        else:
+            data = gpm.get_data(ds)
+            # pixel value {lon: [5.0,5.1], lat: [-1.8,-1.81]} = 0.145 
+            col,row = gpm.getcolrow(ds, 5.01,-1.81)
+            value0 = round(data[row][col],3)
+            assert value0==0.145, "Value={}, expected 0.145".format(value0)
+            
+            gpm.create_tif(r'/media/sf_Documents/projdirs/hdf/out7.tif', EXTENT, data, ds, etype=gdal.GDT_Float32)
+
+#     gpm.convert_tif(DATASET, FOLDER, EXTENT)
