@@ -7,8 +7,9 @@ import os, re, datetime, gdal, osr
 import netCDF4 as nc
 import numpy as np
 from sat import Base
+from datetime import timedelta
+from ftplib import FTP, FTP_TLS
 
-# TODO: use NETCDF interface directly
 # 3D array 720x1440xndays
 # cell (0,0) is centered around lat=89.875 and lon=-179.875
 # cell sizes: 0.25 degree
@@ -23,6 +24,14 @@ TOP = 90
 SIZE = 0.25
 WIDTH = 1440
 HEIGHT = 720
+DAY0 = datetime.date(1970,1,1)
+
+GLEAM_HOST = 'hydras.ugent.be'
+GLEAM_PORT = 2225
+GLEAM_PATH = 'data/{version}/{year}'
+GLEAM_VERSION = 'v3.2b'
+GLEAM_USERNAME = 'gleamuser'
+GLEAM_PASSWORD = 'hi_GLEAMv32#HiL?'
 
 class GLEAM(Base):
 
@@ -32,7 +41,8 @@ class GLEAM(Base):
         sr = osr.SpatialReference()
         sr.ImportFromEPSG(4326)
         self.srs = sr.ExportToWkt()
-    
+        self.doy = 0 # day of the year to retrieve
+
     def open(self, filename):
         self.nc = nc.Dataset(filename)
         return self.nc is not None
@@ -83,7 +93,6 @@ class GLEAM(Base):
             return (x1,y2,x2,y1)
         else:
             return (x1,y1,x2,y2)
-
     
     def get_data(self,ds,bbox=None):
 
@@ -91,20 +100,40 @@ class GLEAM(Base):
             ds = self.get_dataset(ds)
 
         if bbox is None:
-            return ds[0]
-
-        x1,y1,x2,y2 = self.transbox(ds, bbox, topix=True, clip=True)
-
-        xoff = int(x1)
-        xsize = int(x2-x1)
-        yoff = int(y1)
-        ysize = int(y2-y1)
-
-        # gets data for all time steps in this file (all days in current year)
-        data = ds[0, yoff:yoff+ysize, xoff:xoff+xsize]
-        
-        return data
+            # no bounding box: return entire tile
+            data = ds[self.doy]
+        else:
+            # clip bounding box
+            x1,y1,x2,y2 = self.transbox(ds, bbox, topix=True, clip=True)
+            data = ds[self.doy,int(x1):int(x2),int(y1):int(y2)]
+        # need to transpose data for gdal: y is first index     
+        return np.transpose(data)
     
+    def iter_data(self,ds,bbox = None):
+        ''' yield a tile for every day in this dataset ''' 
+        if isinstance(ds,str):
+            ds = self.get_dataset(ds)
+        times = self.nc.variables['time']
+        self.doy = 0
+        for time in times:
+            date = DAY0 + timedelta(days = int(time)) 
+            yield (date, self.get_data(ds, bbox))
+            self.doy += 1
+
+    def connect(self, host, port=0, timeout=-999):
+        if self.ftp is None:
+            self.ftp = FTP()
+        self.ftp.connect(host=host,port=port)
+        self.ftp.login(user=GLEAM_USERNAME,passwd=GLEAM_PASSWORD)
+        return self.ftp
+
+    def download_dataset(self, name, years, version=GLEAM_VERSION, overwrite=True):
+        if self.ftp is None:
+            self.connect(GLEAM_HOST,GLEAM_PORT)
+        for year in years:
+            folder = GLEAM_PATH.format(version=version,year=year)
+            self.download_tile(folder, name, overwrite)
+
     def create_tif(self, filename, extent, data, template, etype):
 
         if os.path.exists(filename):
@@ -113,7 +142,6 @@ class GLEAM(Base):
             dirname = os.path.dirname(filename)
             if not os.path.exists(dirname):
                 os.makedirs(dirname)
-        print filename
         ysize,xsize = data.shape
         tif = gdal.GetDriverByName('GTiff').Create(filename, xsize, ysize, eType=etype)
         tif.SetProjection(self.srs)
@@ -121,24 +149,27 @@ class GLEAM(Base):
         band = tif.GetRasterBand(1)
         band.WriteArray(data)
 
+DESTFOLDER=r'/media/sf_Documents/projdirs/Ethiopia Unicef/gleam'
 TESTFILE=r'/media/sf_Documents/projdirs/Ethiopia Unicef/gleam/SMroot_2017_GLEAM_v3.2b.nc'
-EXTENT=(-180,-90,180,90)
+#EXTENT=(-180,-90,180,90)
+EXTENT=(33,3,48,15) # Ethiopia
 DATASET=r'SMroot'
 
 if __name__ == '__main__':
     
     gleam = GLEAM()
-    if not gleam.open(TESTFILE):
-        print 'ERROR: cant open file', TESTFILE
-    else:
-        ds = gleam.get_dataset(DATASET)
-        if ds is None:
-            print 'ERROR: cant open dataset', DATASET
-        else:
-            data = gleam.get_data(ds)
-            #col,row = gleam.getcolrow(ds, 5.01,-1.81)
-            #value0 = round(data[col][row],3)
-            #assert value0==0.145, "Value={}, expected 0.145".format(value0)
-            data = np.array(data,dtype=np.float64)
-            data = np.transpose(data)
-            gleam.create_tif(r'/media/sf_Documents/projdirs/Ethiopia Unicef/gleam/SMroot_2017_GLEAM_v3.2b.tif', EXTENT, data, ds, etype=gdal.GDT_Float64)
+    os.chdir(DESTFOLDER) 
+    gleam.download_dataset('SMroot', range(2003,2017), 'v2.3b', overwrite=True)
+
+#     if not gleam.open(TESTFILE):
+#         print 'ERROR: cant open file', TESTFILE
+#     else:
+#         ds = gleam.get_dataset(DATASET)
+#         if ds is None:
+#             print 'ERROR: cant open dataset', DATASET
+#         else:
+#             for date,tile in gleam.iter_data(ds,EXTENT):
+#                 filename = r'/media/sf_Documents/projdirs/Ethiopia Unicef/gleam/SMroot_{:%Y%m%d}_GLEAM_v3.2b.tif'.format(date)
+#                 print filename
+#                 gleam.create_tif(filename, EXTENT, tile, ds, etype=gdal.GDT_Float32)
+                
