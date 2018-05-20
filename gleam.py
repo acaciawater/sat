@@ -8,7 +8,7 @@ import netCDF4 as nc
 import numpy as np
 from sat import Base
 from datetime import timedelta
-from ftplib import FTP, FTP_TLS
+from paramiko.client import SSHClient, AutoAddPolicy
 
 # 3D array 720x1440xndays
 # cell (0,0) is centered around lat=89.875 and lon=-179.875
@@ -28,10 +28,11 @@ DAY0 = datetime.date(1970,1,1)
 
 GLEAM_HOST = 'hydras.ugent.be'
 GLEAM_PORT = 2225
-GLEAM_PATH = 'data/{version}/{year}'
+GLEAM_PATH = '/data/{version}/{year}'
 GLEAM_VERSION = 'v3.2b'
 GLEAM_USERNAME = 'gleamuser'
 GLEAM_PASSWORD = 'hi_GLEAMv32#HiL?'
+#sftp://hydras.ugent.be:2225/data/v3.2b/2003
 
 class GLEAM(Base):
 
@@ -42,7 +43,8 @@ class GLEAM(Base):
         sr.ImportFromEPSG(4326)
         self.srs = sr.ExportToWkt()
         self.doy = 0 # day of the year to retrieve
-
+        self.ssh = None
+        
     def open(self, filename):
         self.nc = nc.Dataset(filename)
         return self.nc is not None
@@ -121,18 +123,40 @@ class GLEAM(Base):
             self.doy += 1
 
     def connect(self, host, port=0, timeout=-999):
-        if self.ftp is None:
-            self.ftp = FTP()
-        self.ftp.connect(host=host,port=port)
-        self.ftp.login(user=GLEAM_USERNAME,passwd=GLEAM_PASSWORD)
+        if self.ssh is None:
+            self.ssh = SSHClient() 
+        self.ssh.set_missing_host_key_policy(AutoAddPolicy())
+        self.ssh.connect(hostname=host,port=port,username=GLEAM_USERNAME,password=GLEAM_PASSWORD)
+        self.ftp = self.ssh.open_sftp()
         return self.ftp
 
-    def download_dataset(self, name, years, version=GLEAM_VERSION, overwrite=True):
-        if self.ftp is None:
+    def download(self, filename, folder, overwrite=True):
+        print (filename)
+        localpath = os.path.join(folder,filename)
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+        if os.path.exists(localpath):
+            if not overwrite:
+                print (localpath + ' exists')
+                return
+        self.ftp.get(filename,localpath)
+
+    def download_tile(self, folder, tile, dest, overwrite = True):
+        self.ftp.chdir(folder)
+        files = self.ftp.listdir()
+        for filename in files:
+            if tile is None or tile in filename:
+                self.download(filename, dest, overwrite)
+                break
+
+    def download_dataset(self, name, years, version, dest, overwrite=True):
+        if self.ssh is None:
             self.connect(GLEAM_HOST,GLEAM_PORT)
+        if not dest.endswith('/'):
+            dest += '/'
         for year in years:
             folder = GLEAM_PATH.format(version=version,year=year)
-            self.download_tile(folder, name, overwrite)
+            self.download_tile(folder, name, dest, overwrite)
 
     def create_tif(self, filename, extent, data, template, etype):
 
@@ -159,7 +183,7 @@ if __name__ == '__main__':
     
     gleam = GLEAM()
     os.chdir(DESTFOLDER) 
-    gleam.download_dataset('SMroot', range(2003,2017), 'v2.3b', overwrite=True)
+    gleam.download_dataset('SMroot', range(2003,2017), 'v3.2b', DESTFOLDER, overwrite=True)
 
 #     if not gleam.open(TESTFILE):
 #         print 'ERROR: cant open file', TESTFILE

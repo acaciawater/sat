@@ -117,11 +117,11 @@ class Base:
             self.ftp = None
 
     def download(self, filename, folder, overwrite=True):
-        print filename
+        print (filename)
         pathname = os.path.join(folder,filename)
         if os.path.exists(pathname):
             if not overwrite:
-                print pathname, 'exists'
+                print (pathname + ' exists')
                 return
         with open(pathname,'wb') as f:
             def save(data):
@@ -170,18 +170,18 @@ class Base:
                     if stop is not None:
                         if stop < date:
                             continue
-                    print fil
+                    print (fil)
                     if not self.open(os.path.join(path,fil)):
-                        print "ERROR: can't open file", fil
+                        print ("ERROR: can't open file " + fil)
                         continue
                     ds = self.get_dataset(dataset)
                     if ds is None:
-                        print 'ERROR: cant open dataset', dataset
+                        print ('ERROR: cant open dataset ' + dataset)
                         continue                
                     if count == 0:
                         x,y = self.getcolrow(ds, lon, lat)
                     if x < 0 or y < 0 or x >= ds.RasterXSize or y >= ds.RasterYSize:
-                        print 'ERROR: lon,lat not in tile'
+                        print ('ERROR: lon,lat not in tile')
                         break
                     
                     count = count+1
@@ -214,7 +214,7 @@ class Base:
             for fil in files:
                 if not self.is_datafile(fil):
                     continue
-                print fil
+                print (fil)
                 self.open(os.path.join(path,fil))
                 ds = self.get_dataset(dataset)
                 tile = self.get_data(ds, extent) # 2-dimensional np.ndarray
@@ -243,7 +243,7 @@ class Base:
                         os.remove(dest)
                     else:
                         continue
-                print fil
+                print (fil)
                 try:
                     self.open(os.path.join(path,fil))
                     ds = self.get_dataset(dataset)
@@ -254,7 +254,7 @@ class Base:
                     band = tif.GetRasterBand(1)
                     band.WriteArray(np.array(tile))
                 except Exception as e:
-                    print 'ERROR: ', e
+                    print ('ERROR: ' + str(e))
 
     def create_tif(self, filename, extent, data, template, etype):
 
@@ -264,7 +264,7 @@ class Base:
             dirname = os.path.dirname(filename)
             if not os.path.exists(dirname):
                 os.makedirs(dirname)
-        print filename
+        print (filename)
         ysize,xsize = data.shape
         tif = gdal.GetDriverByName('GTiff').Create(filename, xsize, ysize, eType=etype)
         self.copy_projection(template, tif, extent)
@@ -325,13 +325,13 @@ class Base:
                         if stop < date:
                             continue
     
-                    print fil
+                    print (fil)
                     if not self.open(os.path.join(path,fil)):
-                        print " ERROR: can't open file"
+                        print (" ERROR: can't open file")
                         continue
                     ds = self.get_dataset(dataset)
                     if ds is None:
-                        print 'ERROR: cant open dataset.'
+                        print ('ERROR: cant open dataset.')
                         continue
                     if template is None:
                         template = ds
@@ -383,7 +383,7 @@ class Base:
             geom = feature.GetGeometryRef()
             x,y,z = geom.Centroid().GetPoint()
             pts[fid] = {'lon': x, 'lat': y, 'tile': self.tileid(x,y)}
-            print fid,pts[fid]
+            print (fid,pts[fid])
             
         with open(csvfile,'w') as of:
             # write csv header line
@@ -399,14 +399,14 @@ class Base:
                     for fid, p in pts.iteritems():
                         if p['tile'] in fil:
                             # matching tile and date
-                            print fil,
+                            print (fil)
                             if data is None:
                                 try:
                                     self.open(os.path.join(path,fil))
                                     ds = self.get_dataset(dataset)
                                     data = self.get_data(ds)
                                 except Exception as e:
-                                    print 'ERROR opening file', e
+                                    print *'ERROR opening file ' + str(e)
                                     continue
                             if not 'row' in p:
                                 lon = p['lon']
@@ -444,7 +444,7 @@ class Base:
                     if self.is_datafile(file) and (tile is None or tile in file):
                         date = self.extractdate(file)
                         if date >= start and date <= stop:
-                            print file
+                            print (file)
                             try:
                                 self.open(os.path.join(src,file))
                                 data = self.get_data(dataset)
@@ -532,19 +532,19 @@ class Base:
                         break
             break
         if ds is None:
-            print 'No tiles found'
+            print ('No tiles found')
             exit
         
-        print 'calculating weights...'
+        print ('calculating weights...')
         found = 0
         for feature in layer:
-            print 'feature', feature.GetFID()
+            print ('feature ' + str(feature.GetFID()))
             geom = feature.GetGeometryRef()
             w = self.get_weights(ds,geom)
             found += len(w)
             weights[feature] = w
 
         if found == 0:
-            print 'No intersecting features found for tile %s' % tile
+            print ('No intersecting features found for tile %s' % tile)
         else:
             self.polygon_series(csvfile, weights, modis_folder, dataset_name, tile, start, stop)
