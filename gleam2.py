@@ -1,14 +1,16 @@
 '''
-Created on May 15, 2018
-Process GLEAM netCDF4 files using python's netcdf4 module
+Created on June 5, 2018
+
+process GLEAM netCDF4 files using plain gdal library (no need to import netCDF)
+
 @author: theo
 '''
 import os, re, datetime, gdal, osr
-import netCDF4 as nc
 import numpy as np
 from sat import Base
 from datetime import timedelta
 from paramiko.client import SSHClient, AutoAddPolicy
+import json
 
 # 3D array 720x1440xndays
 # cell (0,0) is centered around lat=89.875 and lon=-179.875
@@ -32,7 +34,6 @@ GLEAM_PATH = '/data/{version}/{year}'
 GLEAM_VERSION = 'v3.2b'
 GLEAM_USERNAME = 'gleamuser'
 GLEAM_PASSWORD = 'hi_GLEAMv32#HiL?'
-#sftp://hydras.ugent.be:2225/data/v3.2b/2003
 
 class GLEAM(Base):
 
@@ -45,15 +46,8 @@ class GLEAM(Base):
         self.doy = 0 # day of the year to retrieve
         self.ssh = None
         
-    def open(self, filename):
-        self.nc = nc.Dataset(filename)
-        return self.nc is not None
-
-    def close(self):
-        self.nc = None
-
     def getcolrow(self,ds,lon,lat):
-        col = (lon - LEFT) / SIZE
+        col = WIDTH - (lon - LEFT) / SIZE - 1
         row = (TOP - lat) / SIZE
         return (col,row)
 
@@ -68,7 +62,8 @@ class GLEAM(Base):
         return None
         
     def get_dataset(self, name):
-        return self.nc.variables[name]
+        # TODO: check if name corresponds to dataset in hdf 
+        return self.hdf
 
     def transbox(self, ds, bbox, topix=False, clip=False):
 
@@ -98,31 +93,44 @@ class GLEAM(Base):
     
     def get_data(self,ds,bbox=None):
 
-        if isinstance(ds,str):
-            ds = self.get_dataset(ds)
+#         if isinstance(ds,str):
+#             ds = self.get_dataset(ds)
 
+        band = ds.GetRasterBand(self.doy)
         if bbox is None:
-            # no bounding box: return entire tile
-            data = ds[self.doy]
+            data = band.ReadAsArray()
         else:
-            # clip bounding box
-            x1,y1,x2,y2 = self.transbox(ds, bbox, topix=True, clip=True)
-            data = ds[self.doy,int(x1):int(x2),int(y1):int(y2)]
-        # need to transpose data for gdal: y is first index     
-        return np.transpose(data)
+            x2,y1,x1,y2 = self.transbox(ds, bbox, topix=True, clip=True)
+    
+            xoff = int(x1)
+            xsize = int(x2-x1)+1
+            yoff = int(y1)
+            ysize = int(y2-y1)+1
+    
+            data = band.ReadAsArray(yoff,xoff,ysize,xsize)
+        # need to transpose data for gdal: y is first index in ndarray
+        # x coordinates are reversed, use np.fliplr to reverse values back to normal order    
+        return np.fliplr(np.transpose(data))
+    
+    def get_times(self,ds):
+        meta = ds.GetMetadata()
+        # replace {1,2,3,4} with [1,2,3,4]
+        values = meta['NETCDF_DIM_time_VALUES'].replace('{','[').replace('}',']')
+        return json.loads(values)
     
     def iter_data(self,ds,bbox = None):
         ''' yield a tile for every day in this dataset ''' 
-        if isinstance(ds,str):
-            ds = self.get_dataset(ds)
-        times = self.nc.variables['time']
-        self.doy = 0
-        for time in times:
+#         if isinstance(ds,str):
+#             ds = self.get_dataset(ds)
+
+        self.doy = 1
+        for time in self.get_times(ds):
             date = DAY0 + timedelta(days = int(time)) 
             yield (date, self.get_data(ds, bbox))
             self.doy += 1
 
     def connect(self, host, port=0, timeout=-999):
+        # override sat.connect() to use ssh connection (sftp) instead of ftp
         if self.ssh is None:
             self.ssh = SSHClient() 
         self.ssh.set_missing_host_key_policy(AutoAddPolicy())
@@ -182,8 +190,30 @@ DATASET=r'SMroot'
 if __name__ == '__main__':
     
     gleam = GLEAM()
-    os.chdir(DESTFOLDER) 
-    gleam.download_dataset('SMroot', range(2003,2017), 'v3.2b', DESTFOLDER, overwrite=False)
+    if not gleam.open(TESTFILE):
+        print ('ERROR: cant open file ' + TESTFILE)
+    
+    ds = gleam.get_dataset(DATASET)
+    if ds is None:
+        print ('ERROR: cant open dataset ' + DATASET)
+    else:
+        for date,tile in gleam.iter_data(ds,EXTENT):
+            filename = r'/media/sf_Documents/projdirs/Ethiopia Unicef/gleam/SMroot_{:%Y%m%d}_GLEAM_v3.2b.tif'.format(date)
+            print (filename)
+            gleam.create_tif(filename, EXTENT, tile, ds, etype=gdal.GDT_Float32)
+#         head, tail = os.path.split(TESTFILE)
+#         date = gleam.extractdate(tail)
+#         for i in range(1,366):
+#             gleam.doy = i
+#             data = gleam.get_data(ds, EXTENT)
+#             if data:
+#                 filename = r'/media/sf_Documents/projdirs/Ethiopia Unicef/gleam/SMroot_{:%Y%m%d}_GLEAM_v3.2b.tif'.format(date)
+#                 print (filename)
+#                 gleam.create_tif(filename, EXTENT, data, ds, etype=gdal.GDT_Float32)
+#                 date = date + timedelta(days=1)
+            
+#     os.chdir(DESTFOLDER) 
+#     gleam.download_dataset('SMroot', range(2003,2017), 'v3.2b', DESTFOLDER, overwrite=False)
 
 #     if not gleam.open(TESTFILE):
 #         print 'ERROR: cant open file', TESTFILE

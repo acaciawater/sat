@@ -406,7 +406,7 @@ class Base:
                                     ds = self.get_dataset(dataset)
                                     data = self.get_data(ds)
                                 except Exception as e:
-                                    print *'ERROR opening file ' + str(e)
+                                    print ('ERROR opening file ' + str(e))
                                     continue
                             if not 'row' in p:
                                 lon = p['lon']
