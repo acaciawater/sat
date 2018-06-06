@@ -14,8 +14,8 @@ class GPM(Base):
     
     def extractdate(self,name):
         ''' extract date from filename'''
-        # 3B-DAY-L.MS.MRG.3IMERG.20161218-S000000-E235959.V03.nc
-        pat = r'3B\-DAY\-L\.MS\.MRG\.3IMERG\.(?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2})\-S000000\-E235959\.V03\.nc4$'
+        #3B-DAY.MS.MRG.3IMERG.20140312-S000000-E235959.V05.nc4
+        pat = r'3B\-DAY\.MS\.MRG\.3IMERG\.(?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2})\-S000000\-E235959\.V05\.nc4$'
         m = re.search(pat, name)
         if m is None:
             # try version 5B, monthly

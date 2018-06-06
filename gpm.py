@@ -3,7 +3,8 @@ import numpy as np
 from sat import Base
 
 class GPM(Base):
-
+    ''' Processes GPM HDF files '''
+    
     def __init__(self, filename = None):
         Base.__init__(self,filename)
         # set default spatial reference
@@ -13,7 +14,7 @@ class GPM(Base):
     
     def extractdate(self,name):
         ''' extract date from filename'''
-        # 3B-DAY-L.MS.MRG.3IMERG.20161218-S000000-E235959.V03.nc4
+        # 3B-DAY-L.MS.MRG.3IMERG.20161218-S000000-E235959.V03.hdf
         pat = r'3B\-DAY\-L\.MS\.MRG\.3IMERG\.(?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2})\-S000000\-E235959\.V03\.hdf$'
         m = re.search(pat, name)
         if m is None:

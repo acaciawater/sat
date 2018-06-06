@@ -270,7 +270,8 @@ class Base:
         self.copy_projection(template, tif, extent)
         band = tif.GetRasterBand(1)
         band.WriteArray(data)
-             
+        return tif
+    
     def save_stats(self, dest, data, extent, template):
         sm = sm2 = mn = mx = None
         count = len(data)
