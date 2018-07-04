@@ -37,7 +37,7 @@ class GPM(Base):
             ds.SetGeoTransform([-180,0.1,0,-90,0,0.1])
 
         return ds
-
+   
     def get_data(self,ds,bbox=None):
 
         if isinstance(ds,str):
