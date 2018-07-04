@@ -89,6 +89,13 @@ TESTFILE=r'/media/sf_Documents/projdirs/Ethiopia Unicef/precipitation/GPM/3B-DAY
 FOLDER=r'/media/sf_Documents/projdirs/Ethiopia Unicef/precipitation/GPM'
 EXTENT=(-180,-90,180,90)
 DATASET=r'HQprecipitation'
+
+EXTENT=(33,3,48,15) # Ethiopia
+
+SRC = FOLDER
+DEST = FOLDER+'/stat'
+TILE = None
+
 if __name__ == '__main__':
     
     gpm = GPM()
@@ -99,6 +106,7 @@ if __name__ == '__main__':
         if ds is None:
             print ('ERROR: cant open dataset' + DATASET)
         else:
+            gpm.get_stat('HQprecipitation', SRC, DEST, TILE, EXTENT)
             data = gpm.get_data(ds)
             tif = gpm.create_tif(r'/media/sf_Documents/projdirs/Ethiopia Unicef/precipitation/GPM/gpm20170120.tif', EXTENT, data, ds, etype=gdal.GDT_Float32)
             #tif.GetRasterBand(1).SetNoDataValue(-9999.0)
