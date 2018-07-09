@@ -338,6 +338,8 @@ class Base:
                         template = ds
                     data = self.get_data(ds, extent) # 2-dimensional np.ndarray
                     tiles.append((date,data))
+                    ds = None
+                    self.close()
 
         name = '{path}/{name}'.format(path=dest, name=dataset)
         if tile:
