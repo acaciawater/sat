@@ -4,7 +4,7 @@ Created on May 27, 2014
 @author: theo
 '''
 import os,re,datetime
-from sat import Base
+from .sat import Base
 
 # MOD16 datasets
 NTSG = 'ftp.ntsg.umt.edu'

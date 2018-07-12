@@ -1,7 +1,7 @@
 import os, re, datetime, osr, gdal
 import numpy as np
-from gpm2 import GPM
-from sat import Base
+from .gpm2 import GPM
+from .sat import Base
 
 class TRMM(GPM):
     ''' processes TRMM netCDF4 files '''
@@ -9,7 +9,7 @@ class TRMM(GPM):
     def extractdate(self,name):
         ''' extract date from filename'''
         #3B42_Daily.20180328.7.nc4
-        pat = r'3B42_Daily\.(?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2})\.7\.nc4'
+        pat = r'3B42_Daily\.(?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2})\.7\.nc4$'
         m = re.search(pat, name)
         if m is not None:
             year = int(m.group('year'))
@@ -60,31 +60,3 @@ class TRMM(GPM):
             trans[3] = extent[1]
         return trans
                     
-#TESTFILE=r'/media/sf_Documents/projdirs/Ethiopia Unicef/precipitation/GPM/3B-DAY.MS.MRG.3IMERG.20160820-S000000-E235959.V05.nc4'
-TESTFILE=r'/media/sf_Documents/projdirs/Ethiopia Unicef/precipitation/TRMM/3B42_Daily.19980101.7.nc4'
-FOLDER=r'/media/sf_Documents/projdirs/Ethiopia Unicef/precipitation/TRMM'
-EXTENT=(-180,-50,180,50)
-DATASET=r'precipitation'
-
-EXTENT=(33,3,48,15) # Ethiopia
-
-SRC = FOLDER
-DEST = FOLDER+'/stat'
-TILE = None
-
-if __name__ == '__main__':
-    
-    trmm = TRMM()
-    if not trmm.open(TESTFILE):
-        print ('ERROR: cant open file' + TESTFILE)
-    else:
-        ds = trmm.get_dataset(DATASET)
-        if ds is None:
-            print ('ERROR: cant open dataset' + DATASET)
-        else:
-            trmm.get_stat(DATASET, SRC, DEST, TILE, EXTENT)
-            #data = trmm.get_data(ds,EXTENT)
-            #tif = trmm.create_tif(DEST+'/out2.tif', EXTENT, data, ds, etype=gdal.GDT_Float32)
-            #tif.GetRasterBand(1).SetNoDataValue(-9999.0)
-
-#     trmm.convert_tif(DATASET, FOLDER, EXTENT)

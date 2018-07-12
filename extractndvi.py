@@ -1,4 +1,4 @@
-from modis import MOD13
+from .modis import MOD13
 from datetime import date
 
 DATA = r'/media/GONWKS2/GIS_bestanden/Africa/modis/mod13c2.006'
