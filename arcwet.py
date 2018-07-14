@@ -3,7 +3,7 @@ Created on Apr 29, 2016
 
 @author: theo
 '''
-from arc2.arc2 import ARC2
+from .arc2 import ARC2
 from datetime import date
 import numpy as np
 
