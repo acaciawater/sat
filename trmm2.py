@@ -66,7 +66,7 @@ FOLDER=r'/media/sf_Documents/projdirs/Ethiopia Unicef/precipitation/TRMM'
 EXTENT=(-180,-50,180,50)
 DATASET=r'precipitation'
 
-EXTENT=(33,3,48,15) # Ethiopia
+#EXTENT=(33,3,48,15) # Ethiopia
 
 SRC = FOLDER
 DEST = FOLDER+'/stat'
@@ -82,9 +82,9 @@ if __name__ == '__main__':
         if ds is None:
             print ('ERROR: cant open dataset' + DATASET)
         else:
-            trmm.get_stat(DATASET, SRC, DEST, TILE, EXTENT)
-            #data = trmm.get_data(ds,EXTENT)
-            #tif = trmm.create_tif(DEST+'/out2.tif', EXTENT, data, ds, etype=gdal.GDT_Float32)
-            #tif.GetRasterBand(1).SetNoDataValue(-9999.0)
+            #trmm.get_stat(DATASET, SRC, DEST, TILE, EXTENT)
+            data = trmm.get_data(ds,EXTENT)
+            tif = trmm.create_tif(DEST+'/outlinux.tif', EXTENT, data, ds, etype=gdal.GDT_Float32)
+            tif.GetRasterBand(1).SetNoDataValue(-9999.0)
 
 #     trmm.convert_tif(DATASET, FOLDER, EXTENT)
