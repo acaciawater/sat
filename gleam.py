@@ -6,7 +6,7 @@ Process GLEAM netCDF4 files using python's netcdf4 module
 import os, re, datetime, gdal, osr
 import netCDF4 as nc
 import numpy as np
-from .sat import Base
+from sat import Base
 from datetime import timedelta
 from paramiko.client import SSHClient, AutoAddPolicy
 

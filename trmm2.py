@@ -1,7 +1,7 @@
 import os, re, datetime, osr, gdal
 import numpy as np
-from .gpm2 import GPM
-from .sat import Base
+from gpm2 import GPM
+from sat import Base
 
 class TRMM(GPM):
     ''' processes TRMM netCDF4 files '''

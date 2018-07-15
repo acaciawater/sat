@@ -1,6 +1,6 @@
 import os, re, datetime, osr, gdal
 import numpy as np
-from .sat import Base
+from sat import Base
 
 class GPM(Base):
     ''' Processes GPM HDF files '''
