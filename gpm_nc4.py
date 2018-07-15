@@ -14,13 +14,13 @@ import netCDF4 as nc
 import numpy as np
 from sat import Base
 
-EXTENT = (-180,-50,180,50)
+EXTENT=(-180,-90,180,90)
+SIZE = 0.10
 LEFT, BOTTOM, RIGHT, TOP = EXTENT
-DIM = (1440,400)
+DIM = (3600,1800)
 WIDTH, HEIGHT = DIM
-SIZE = 0.25
 
-class TRMM(Base):
+class GPM(Base):
 
     def __init__(self, filename=None):
         # set default spatial reference
@@ -48,9 +48,14 @@ class TRMM(Base):
 
     def extractdate(self,name):
         ''' extract date from filename'''
-        #3B42_Daily.20180328.7.nc4
-        pat = r'3B42_Daily\.(?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2})\.7\.nc4$'
+        #3B-DAY.MS.MRG.3IMERG.20140312-S000000-E235959.V05.nc4
+        pat = r'3B\-DAY\.MS\.MRG\.3IMERG\.(?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2})\-S000000\-E235959\.V05\.nc4$'
         m = re.search(pat, name)
+        if m is None:
+            # try version 5B, monthly
+            # 3B-MO.MS.MRG.3IMERG.20171201-S000000-E235959.12.V05B.nc
+            pat = r'3B\-MO\.MS\.MRG\.3IMERG\.(?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2})\-S000000\-E235959\.(?P<month2>\d{2})\.V05B\.nc4$'
+            m = re.search(pat, name)
         if m is not None:
             year = int(m.group('year'))
             month = int(m.group('month'))
@@ -125,21 +130,23 @@ class TRMM(Base):
         
 if __name__ == '__main__':
 
-    TESTFILE = '/media/sf_Documents/projdirs/Ethiopia Unicef/precipitation/TRMM/3B42_Daily.19980101.7.nc4'
-    DATASET = 'precipitation'
-    OUTFILE = '/media/sf_Documents/projdirs/Ethiopia Unicef/precipitation/3B42_Daily.19980101.7.tif'
+    TESTFILE=r'/media/sf_Documents/projdirs/Ethiopia Unicef/precipitation/GPM/3B-DAY.MS.MRG.3IMERG.20170120-S000000-E235959.V05.nc4'
+    OUTFILE = '/media/sf_Documents/projdirs/Ethiopia Unicef/precipitation/3B-DAY-MS-MRG-3IMERG-20170120-S000000-E235959-V05.tif'
+    DATASET=r'HQprecipitation'
+    
+
     ETHIOPIA = (33,3,48,15)
-    OUTFILE2 = '/media/sf_Documents/projdirs/Ethiopia Unicef/precipitation/3B42_Daily.ethiopia.tif'
+    OUTFILE2 = '/media/sf_Documents/projdirs/Ethiopia Unicef/precipitation/GPM_ethiopia.tif'
  
-    tr = TRMM(TESTFILE)
+    tr = GPM(TESTFILE)
     data = tr.get_data(DATASET, bbox=ETHIOPIA)
     tr.create_tif(OUTFILE2, extent=ETHIOPIA, data=data, template=None, etype=gdal.GDT_Float32)
     
-#     dataset = nc.Dataset(TESTFILE)
+#     dataset = nc.Dataset(TESTFILE,'r')
 #     prec = dataset.variables[DATASET]
-#     data = prec[:,:].T # dimensions are (lat,lon). Transpose for gdal  
-#     data[data<0] = np.NaN # clear fill value (no need to set nodata)
-#  
+#     data = np.array(prec).T # dimensions are (lat,lon). Transpose for gdal
+#     print(data.min(), data.max())
+#     
 #     if os.path.exists(OUTFILE):
 #         os.remove(OUTFILE)
 #     else:
@@ -147,14 +154,14 @@ if __name__ == '__main__':
 #         if not os.path.exists(dirname):
 #             os.makedirs(dirname)
 #     ysize,xsize = data.shape
-#     tif = gdal.GetDriverByName('GTiff').Create(OUTFILE, xsize, ysize, eType=gdal.GDT_Float32)
+#     tif = gdal.GetDriverByName('GTiff').Create(OUTFILE, xsize, ysize, bands=1, eType=gdal.GDT_Float32)
 #     sr = osr.SpatialReference()
 #     sr.ImportFromEPSG(4326)
-#     srs = sr.ExportToWkt()
-#     tif.SetProjection(srs)
+#     tif.SetProjection(sr.ExportToWkt())
 #     geotransform = (EXTENT[0],SIZE,0,EXTENT[1],0,SIZE)
 #     tif.SetGeoTransform(geotransform)
 #     band = tif.GetRasterBand(1)
+#     band.SetNoDataValue(float(prec._FillValue))
 #     band.WriteArray(data)
 #     tif.FlushCache()
 #     tif = None
