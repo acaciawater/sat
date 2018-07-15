@@ -1,6 +1,6 @@
 import os, re, datetime, osr, gdal
 import numpy as np
-from sat import Base
+from .sat import Base
 
 class GPM(Base):
     ''' processes GPM netCDF4 files '''
@@ -84,31 +84,31 @@ class GPM(Base):
                 data = self.get_data(ds, extent) # 2-dimensional np.ndarray
                 self.create_tif(os.path.join(path,filename), extent, data, ds, gdal.GDT_Float32)
                 
-#TESTFILE=r'/media/sf_Documents/projdirs/Ethiopia Unicef/precipitation/GPM/3B-DAY.MS.MRG.3IMERG.20160820-S000000-E235959.V05.nc4'
-TESTFILE=r'/media/sf_Documents/projdirs/Ethiopia Unicef/precipitation/GPM/3B-DAY.MS.MRG.3IMERG.20170120-S000000-E235959.V05.nc4'
-FOLDER=r'/media/sf_Documents/projdirs/Ethiopia Unicef/precipitation/GPM'
-EXTENT=(-180,-90,180,90)
-DATASET=r'HQprecipitation'
+# #TESTFILE=r'/media/sf_Documents/projdirs/Ethiopia Unicef/precipitation/GPM/3B-DAY.MS.MRG.3IMERG.20160820-S000000-E235959.V05.nc4'
+# TESTFILE=r'/media/sf_Documents/projdirs/Ethiopia Unicef/precipitation/GPM/3B-DAY.MS.MRG.3IMERG.20170120-S000000-E235959.V05.nc4'
+# FOLDER=r'/media/sf_Documents/projdirs/Ethiopia Unicef/precipitation/GPM'
+# EXTENT=(-180,-90,180,90)
+# DATASET=r'HQprecipitation'
 
-EXTENT=(33,3,48,15) # Ethiopia
+# EXTENT=(33,3,48,15) # Ethiopia
 
-SRC = FOLDER
-DEST = FOLDER+'/stat'
-TILE = None
+# SRC = FOLDER
+# DEST = FOLDER+'/stat'
+# TILE = None
 
-if __name__ == '__main__':
+# if __name__ == '__main__':
     
-    gpm = GPM()
-    if not gpm.open(TESTFILE):
-        print ('ERROR: cant open file' + TESTFILE)
-    else:
-        ds = gpm.get_dataset(DATASET)
-        if ds is None:
-            print ('ERROR: cant open dataset' + DATASET)
-        else:
-            gpm.get_stat('HQprecipitation', SRC, DEST, TILE, EXTENT)
-            data = gpm.get_data(ds)
-            tif = gpm.create_tif(r'/media/sf_Documents/projdirs/Ethiopia Unicef/precipitation/GPM/gpm20170120.tif', EXTENT, data, ds, etype=gdal.GDT_Float32)
-            #tif.GetRasterBand(1).SetNoDataValue(-9999.0)
+#     gpm = GPM()
+#     if not gpm.open(TESTFILE):
+#         print ('ERROR: cant open file' + TESTFILE)
+#     else:
+#         ds = gpm.get_dataset(DATASET)
+#         if ds is None:
+#             print ('ERROR: cant open dataset' + DATASET)
+#         else:
+#             gpm.get_stat('HQprecipitation', SRC, DEST, TILE, EXTENT)
+#             data = gpm.get_data(ds)
+#             tif = gpm.create_tif(r'/media/sf_Documents/projdirs/Ethiopia Unicef/precipitation/GPM/gpm20170120.tif', EXTENT, data, ds, etype=gdal.GDT_Float32)
+#             #tif.GetRasterBand(1).SetNoDataValue(-9999.0)
 
-#     gpm.convert_tif(DATASET, FOLDER, EXTENT)
+# #     gpm.convert_tif(DATASET, FOLDER, EXTENT)

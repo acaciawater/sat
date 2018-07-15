@@ -1,6 +1,6 @@
 import os, re, datetime, osr, gdal
 import numpy as np
-from sat import Base
+from .sat import Base
 
 class GPM(Base):
     ''' Processes GPM HDF files '''
@@ -77,7 +77,7 @@ class GPM(Base):
             for fil in files:
                 if not self.is_datafile(fil):
                     continue
-                print fil
+                print (fil)
                 filename = fil.replace('hdf', dataset+'.tif')
                 self.open(os.path.join(path,fil))
                 ds = self.get_dataset(dataset)
@@ -94,11 +94,11 @@ if __name__ == '__main__':
     
     gpm = GPM()
     if not gpm.open(TESTFILE):
-        print 'ERROR: cant open file', TESTFILE
+        print ('ERROR: cant open file ' + TESTFILE)
     else:
         ds = gpm.get_dataset(DATASET)
         if ds is None:
-            print 'ERROR: cant open dataset', DATASET
+            print ('ERROR: cant open dataset ' + DATASET)
         else:
             data = gpm.get_data(ds)
             # pixel value {lon: [5.0,5.1], lat: [-1.8,-1.81]} = 0.145 

@@ -58,9 +58,9 @@ def gpcc2tif(src,dest):
         for fil in files:
             srcfil = os.path.join(src,fil)
             destfil = os.path.join(dest, '%s.tif' % (os.path.splitext(fil)[0]))
-            print fil
+            print (fil)
             if extractdate(fil):
-                create_tif(destfil,EXTENT,getdata(srcfil))
+                create_tif(destfil,getdata(srcfil))
 
 def save_stats(dest, data):
     sm = sm2 = mn = mx = None
@@ -101,7 +101,7 @@ def gpccstat(src,dest,grouper=None):
             date = extractdate(fil)
             if not date:
                 continue
-            print fil
+            print (fil)
             srcfil = os.path.join(src,fil)
             data = getdata(srcfil)
             tiles.append((date,data))
