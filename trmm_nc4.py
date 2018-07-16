@@ -125,11 +125,15 @@ class TRMM(Base):
         
 if __name__ == '__main__':
 
-    TESTFILE = '/media/sf_Documents/projdirs/Ethiopia Unicef/precipitation/TRMM/3B42_Daily.19980101.7.nc4'
+    # TESTFILE = '/media/sf_Documents/projdirs/Ethiopia Unicef/precipitation/TRMM/3B42_Daily.19980101.7.nc4'
+    # OUTFILE = '/media/sf_Documents/projdirs/Ethiopia Unicef/precipitation/3B42_Daily.19980101.7.tif'
+    # OUTFILE2 = '/media/sf_Documents/projdirs/Ethiopia Unicef/precipitation/3B42_Daily.ethiopia.tif'
+    TESTFILE = r'C:\Users\theo\Documents\projdirs\Ethiopia Unicef\precipitation\TRMM\3B42_Daily.19980101.7.nc4'
+    OUTFILE = r'C:\Users\theo\Documents\projdirs\Ethiopia Unicef\precipitation\3B42_Daily_19980101.tif'
+    OUTFILE2 = r'C:\Users\theo\Documents\projdirs\Ethiopia Unicef\precipitation\3B42_Daily_ethiopia.tif'
+
     DATASET = 'precipitation'
-    OUTFILE = '/media/sf_Documents/projdirs/Ethiopia Unicef/precipitation/3B42_Daily.19980101.7.tif'
     ETHIOPIA = (33,3,48,15)
-    OUTFILE2 = '/media/sf_Documents/projdirs/Ethiopia Unicef/precipitation/3B42_Daily.ethiopia.tif'
  
     tr = TRMM(TESTFILE)
     data = tr.get_data(DATASET, bbox=ETHIOPIA)
