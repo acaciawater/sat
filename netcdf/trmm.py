@@ -12,7 +12,7 @@ import re
 import datetime
 import netCDF4 as nc
 import numpy as np
-from sat import Base
+from ..sat import Base
 
 EXTENT = (-180,-50,180,50)
 LEFT, BOTTOM, RIGHT, TOP = EXTENT
@@ -121,7 +121,7 @@ class TRMM(Base):
         band = tif.GetRasterBand(1)
         band.WriteArray(data)
         tif.FlushCache()
-        tif = None
+        return tif
         
 if __name__ == '__main__':
 

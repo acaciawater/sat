@@ -12,7 +12,7 @@ import re
 import datetime
 import netCDF4 as nc
 import numpy as np
-from sat import Base
+from ..sat import Base
 
 EXTENT=(-180,-90,180,90)
 SIZE = 0.10
@@ -127,41 +127,3 @@ class GPM(Base):
         band.WriteArray(data)
         tif.FlushCache()
         tif = None
-        
-if __name__ == '__main__':
-
-    TESTFILE=r'/media/sf_Documents/projdirs/Ethiopia Unicef/precipitation/GPM/3B-DAY.MS.MRG.3IMERG.20170120-S000000-E235959.V05.nc4'
-    OUTFILE = '/media/sf_Documents/projdirs/Ethiopia Unicef/precipitation/3B-DAY-MS-MRG-3IMERG-20170120-S000000-E235959-V05.tif'
-    DATASET=r'HQprecipitation'
-    
-
-    ETHIOPIA = (33,3,48,15)
-    OUTFILE2 = '/media/sf_Documents/projdirs/Ethiopia Unicef/precipitation/GPM_ethiopia.tif'
- 
-    tr = GPM(TESTFILE)
-    data = tr.get_data(DATASET, bbox=ETHIOPIA)
-    tr.create_tif(OUTFILE2, extent=ETHIOPIA, data=data, template=None, etype=gdal.GDT_Float32)
-    
-#     dataset = nc.Dataset(TESTFILE,'r')
-#     prec = dataset.variables[DATASET]
-#     data = np.array(prec).T # dimensions are (lat,lon). Transpose for gdal
-#     print(data.min(), data.max())
-#     
-#     if os.path.exists(OUTFILE):
-#         os.remove(OUTFILE)
-#     else:
-#         dirname = os.path.dirname(OUTFILE)
-#         if not os.path.exists(dirname):
-#             os.makedirs(dirname)
-#     ysize,xsize = data.shape
-#     tif = gdal.GetDriverByName('GTiff').Create(OUTFILE, xsize, ysize, bands=1, eType=gdal.GDT_Float32)
-#     sr = osr.SpatialReference()
-#     sr.ImportFromEPSG(4326)
-#     tif.SetProjection(sr.ExportToWkt())
-#     geotransform = (EXTENT[0],SIZE,0,EXTENT[1],0,SIZE)
-#     tif.SetGeoTransform(geotransform)
-#     band = tif.GetRasterBand(1)
-#     band.SetNoDataValue(float(prec._FillValue))
-#     band.WriteArray(data)
-#     tif.FlushCache()
-#     tif = None
